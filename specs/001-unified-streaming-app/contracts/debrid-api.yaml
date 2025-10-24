@@ -1,0 +1,462 @@
+openapi: 3.0.3
+info:
+  title: Debrid API
+  description: API for debrid service integration and torrent content streaming
+  version: 1.0.0
+  contact:
+    name: SimpleTV Team
+    email: support@simpletv.com
+
+servers:
+  - url: https://api.simpletv.com/v1
+    description: Production server
+
+paths:
+  /debrid/accounts:
+    get:
+      summary: Get all debrid accounts
+      tags:
+        - Debrid Accounts
+      responses:
+        '200':
+          description: List of debrid accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DebridAccount'
+    post:
+      summary: Add new debrid account
+      tags:
+        - Debrid Accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DebridAccountRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebridAccount'
+        '400':
+          description: Invalid account data
+        '409':
+          description: Account already exists
+
+  /debrid/accounts/{accountId}:
+    get:
+      summary: Get specific debrid account
+      tags:
+        - Debrid Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Debrid account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebridAccount'
+        '404':
+          description: Account not found
+    put:
+      summary: Update debrid account
+      tags:
+        - Debrid Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DebridAccountRequest'
+      responses:
+        '200':
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebridAccount'
+        '404':
+          description: Account not found
+    delete:
+      summary: Delete debrid account
+      tags:
+        - Debrid Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Account deleted successfully
+        '404':
+          description: Account not found
+
+  /debrid/accounts/{accountId}/validate:
+    post:
+      summary: Validate debrid account credentials
+      tags:
+        - Debrid Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Account validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                  quotaUsed:
+                    type: integer
+                    format: int64
+                  quotaLimit:
+                    type: integer
+                    format: int64
+                  expiresAt:
+                    type: integer
+                    format: int64
+                    nullable: true
+
+  /content/search:
+    get:
+      summary: Search torrent content
+      tags:
+        - Content Search
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: contentType
+          in: query
+          schema:
+            type: string
+            enum: [Movie, TV Show, Episode]
+        - name: quality
+          in: query
+          schema:
+            type: string
+            enum: [SD, HD, 4K, UHD]
+        - name: platform
+          in: query
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: imdbId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TorrentContent'
+
+  /content/{contentId}/stream:
+    post:
+      summary: Get streaming URL for content
+      tags:
+        - Content Streaming
+      parameters:
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId:
+                  type: integer
+                quality:
+                  type: string
+                  enum: [SD, HD, 4K, UHD]
+                language:
+                  type: string
+      responses:
+        '200':
+          description: Streaming URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  streamUrl:
+                    type: string
+                    format: uri
+                  quality:
+                    type: string
+                  language:
+                    type: string
+                  expiresAt:
+                    type: integer
+                    format: int64
+        '404':
+          description: Content not found
+        '402':
+          description: Quota exceeded
+
+  /content/{contentId}/subtitles:
+    get:
+      summary: Get available subtitles for content
+      tags:
+        - Content Streaming
+      parameters:
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Available subtitles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subtitles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Subtitle'
+
+  /addons:
+    get:
+      summary: Get available addons
+      tags:
+        - Addons
+      responses:
+        '200':
+          description: List of available addons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  addons:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Addon'
+
+  /addons/{addonId}/content:
+    get:
+      summary: Get content from specific addon
+      tags:
+        - Addons
+      parameters:
+        - name: addonId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [movie, series, episode]
+        - name: imdbId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Content from addon
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  streams:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Stream'
+
+components:
+  schemas:
+    DebridAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        serviceType:
+          type: string
+          enum: [RealDebrid, Premiumize, AllDebrid]
+        username:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        lastUsed:
+          type: integer
+          format: int64
+        quotaUsed:
+          type: integer
+          format: int64
+        quotaLimit:
+          type: integer
+          format: int64
+
+    DebridAccountRequest:
+      type: object
+      required:
+        - serviceType
+        - apiKey
+      properties:
+        serviceType:
+          type: string
+          enum: [RealDebrid, Premiumize, AllDebrid]
+        apiKey:
+          type: string
+          maxLength: 500
+        username:
+          type: string
+
+    TorrentContent:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        imdbId:
+          type: string
+          nullable: true
+        contentType:
+          type: string
+          enum: [Movie, TV Show, Episode]
+        quality:
+          type: string
+          enum: [SD, HD, 4K, UHD]
+        size:
+          type: integer
+          format: int64
+        language:
+          type: string
+        subtitles:
+          type: array
+          items:
+            type: string
+        infoHash:
+          type: string
+        seeders:
+          type: integer
+        leechers:
+          type: integer
+        source:
+          type: string
+        platform:
+          type: string
+          nullable: true
+        isFavorite:
+          type: boolean
+        lastWatched:
+          type: integer
+          format: int64
+          nullable: true
+        watchPosition:
+          type: integer
+          format: int64
+          nullable: true
+
+    Subtitle:
+      type: object
+      properties:
+        language:
+          type: string
+        languageCode:
+          type: string
+        url:
+          type: string
+          format: uri
+        format:
+          type: string
+          enum: [srt, vtt, ass]
+
+    Addon:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+          format: uri
+        isActive:
+          type: boolean
+
+    Stream:
+      type: object
+      properties:
+        title:
+          type: string
+        quality:
+          type: string
+        size:
+          type: integer
+          format: int64
+        infoHash:
+          type: string
+        behaviorHints:
+          type: object
+          properties:
+            filename:
+              type: string
+            videoSize:
+              type: integer
+              format: int64
