@@ -1,0 +1,43 @@
+# Gradle and build cache
+.gradle/
+build/
+*/build/
+
+# Android Studio/IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local configuration
+local.properties
+gradle-app.setting
+
+# Signing and keystore files
+*.jks
+*.keystore
+*.pem
+
+# Android build outputs
+*.apk
+*.ap_
+*.aab
+app/release/
+app/debug/
+
+# Native build artifacts
+.externalNativeBuild/
+cxx/
+captures/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
