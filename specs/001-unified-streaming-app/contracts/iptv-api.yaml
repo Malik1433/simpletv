@@ -1,0 +1,395 @@
+openapi: 3.0.3
+info:
+  title: IPTV API
+  description: API for IPTV playlist management and channel streaming
+  version: 1.0.0
+  contact:
+    name: SimpleTV Team
+    email: support@simpletv.com
+
+servers:
+  - url: https://api.simpletv.com/v1
+    description: Production server
+
+paths:
+  /playlists:
+    get:
+      summary: Get all IPTV playlists
+      tags:
+        - Playlists
+      responses:
+        '200':
+          description: List of IPTV playlists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playlists:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IPTVPlaylist'
+    post:
+      summary: Add new IPTV playlist
+      tags:
+        - Playlists
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IPTVPlaylistRequest'
+      responses:
+        '201':
+          description: Playlist created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPTVPlaylist'
+        '400':
+          description: Invalid playlist data
+        '409':
+          description: Playlist already exists
+
+  /playlists/{playlistId}:
+    get:
+      summary: Get specific IPTV playlist
+      tags:
+        - Playlists
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: IPTV playlist details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPTVPlaylist'
+        '404':
+          description: Playlist not found
+    put:
+      summary: Update IPTV playlist
+      tags:
+        - Playlists
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IPTVPlaylistRequest'
+      responses:
+        '200':
+          description: Playlist updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPTVPlaylist'
+        '404':
+          description: Playlist not found
+    delete:
+      summary: Delete IPTV playlist
+      tags:
+        - Playlists
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Playlist deleted successfully
+        '404':
+          description: Playlist not found
+
+  /playlists/{playlistId}/channels:
+    get:
+      summary: Get channels for playlist
+      tags:
+        - Channels
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+        - name: favorite
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of channels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IPTVChannel'
+
+  /channels/{channelId}/stream:
+    get:
+      summary: Get stream URL for channel
+      tags:
+        - Channels
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Stream URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  streamUrl:
+                    type: string
+                    format: uri
+                  quality:
+                    type: string
+                    enum: [SD, HD, 4K, UHD]
+        '404':
+          description: Channel not found
+
+  /channels/{channelId}/epg:
+    get:
+      summary: Get EPG data for channel
+      tags:
+        - EPG
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: startTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: EPG data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  programs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EPGProgram'
+
+  /search:
+    get:
+      summary: Search across IPTV channels
+      tags:
+        - Search
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+
+components:
+  schemas:
+    IPTVPlaylist:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 100
+        url:
+          type: string
+          format: uri
+        username:
+          type: string
+          nullable: true
+        serverUrl:
+          type: string
+          format: uri
+          nullable: true
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          nullable: true
+        isActive:
+          type: boolean
+        lastUpdated:
+          type: integer
+          format: int64
+        channelCount:
+          type: integer
+
+    IPTVPlaylistRequest:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        url:
+          type: string
+          format: uri
+        username:
+          type: string
+        password:
+          type: string
+        serverUrl:
+          type: string
+          format: uri
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+
+    IPTVChannel:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        playlistId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 200
+        url:
+          type: string
+          format: uri
+        logo:
+          type: string
+          format: uri
+          nullable: true
+        category:
+          type: string
+          maxLength: 50
+        country:
+          type: string
+        language:
+          type: string
+          nullable: true
+        quality:
+          type: string
+          enum: [SD, HD, 4K, UHD]
+          nullable: true
+        isFavorite:
+          type: boolean
+        lastWatched:
+          type: integer
+          format: int64
+          nullable: true
+        viewCount:
+          type: integer
+          format: int64
+
+    EPGProgram:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        channelId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startTime:
+          type: integer
+          format: int64
+        endTime:
+          type: integer
+          format: int64
+        category:
+          type: string
+          nullable: true
+        episodeNumber:
+          type: integer
+          nullable: true
+        seasonNumber:
+          type: integer
+          nullable: true
+
+    SearchResult:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [channel, program]
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        category:
+          type: string
+        country:
+          type: string
+          nullable: true
+        relevanceScore:
+          type: number
+          format: float
